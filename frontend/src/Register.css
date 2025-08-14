@@ -1,0 +1,140 @@
+/* Main wrapper styling (same as login) */
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+   background: #0a1a2f  url(assets/medical-banner-with-doctor-wearing-goggles.jpg) center/cover no-repeat;/* same dark bg */
+  padding: 20px;
+}
+
+/* Form box matches login, with added chasing glow */
+.form-box {
+  position: relative;
+  background-color: #677074;
+  width: 380px;
+  padding: 2rem;
+  border-radius: 12px;
+    
+    border: 2px solid rgba(255, 255, 255, .5);
+    
+  overflow: hidden;
+  z-index: 1;
+}
+
+
+
+@keyframes boxGlow {
+  0% {
+    box-shadow: 0 0 10px #00f6ff, 0 0 20px #00f6ff, 0 0 30px #00f6ff;
+  }
+  50% {
+    box-shadow: 0 0 20px #ff00f6, 0 0 40px #ff00f6, 0 0 60px #ff00f6;
+  }
+  100% {
+    box-shadow: 0 0 10px #00f6ff, 0 0 20px #00f6ff, 0 0 30px #00f6ff;
+  }
+}
+
+.form-box {
+  animation: boxGlow 5s infinite ease-in-out;
+}
+
+/* Title styling */
+.Title {
+  text-align: center;
+  font-size: 1.8rem;
+  color: #fff;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+/* Input boxes same as login */
+.input-box {
+  position: relative;
+  margin-bottom: 1.2rem;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  outline: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #fff;
+}
+/* Remove / restyle autofill background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset !important;
+  -webkit-text-fill-color: #fff !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #fff;
+}
+
+/* Firefox autofill handling */
+input:-moz-autofill,
+textarea:-moz-autofill,
+select:-moz-autofill {
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.05) inset !important;
+  -moz-text-fill-color: #fff !important;
+}
+
+
+.input-box .icon,
+.input-box .password-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+/* Submit button like login */
+button[type="submit"] {
+  width: 100%;
+  align-content: center;
+  padding: 8px;
+  background: #ff00ff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.3s ease;
+}
+
+button[type="submit"]:hover {
+  background: #d400d4;
+}
+
+/* Error/success messages */
+.error-message {
+  color: #ff4d4d;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  color: #00ffcc;
+  text-align: center;
+}
+
+/* Guidelines text */
+.Guidelines {
+  margin-top: 1rem;
+  color: #fff;
+  font-size: 0.85rem;
+}
