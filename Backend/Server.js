@@ -191,7 +191,7 @@ app.get("/activate/:activationHash", (req, res) => {
     });
   });
 
-
+// Login API
 app.post('/login', (req, res) => {
     const { EmailAddress, Password } = req.body;
 
@@ -221,154 +221,13 @@ app.post('/login', (req, res) => {
         res.json({ Status: 'Success', Message: 'Login successful', User: user });
     });
 });
+
+// Start server
+app.listen(8081, () => {
+    console.log('Server running on http://localhost:8081');
+});
+
   
 
 
-
-
-// const pool = mysql.createPool({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASS,
-//   database: process.env.DB_NAME,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0
-// });
-
-// pool.getConnection((err, connection) => {
-//   if (err) {
-//     console.error('Database connection error:', err);
-//   } else {
-//     console.log('Database connected');
-//     connection.release();
-//   }
-// });
-
-// export default pool;
-
-
-// const router = express.Router();
-
-// router.post('/check-email', async (req, res) => {
-//     try {
-//         const { EmailAddress } = req.body;
-
-//         if (!EmailAddress) {
-//             return res.status(400).json({
-//                 exists: false,
-//                 message: 'Email address is required'
-//             });
-//         }
-
-//         const sql = 'SELECT * FROM users WHERE EmailAddress = ?';
-        
-//         db.query(sql, [EmailAddress], (err, result) => {
-//             if (err) {
-//                 console.error('Database query error:', err);
-//                 return res.status(500).json({
-//                     exists: false,
-//                     message: 'Database query failed'
-//                 });
-//             }
-
-//             if (result.length > 0) {
-//                 return res.status(200).json({
-//                     exists: true,
-//                     message: 'Email address already exists'
-//                 });
-//             } else {
-//                 return res.status(200).json({
-//                     exists: false,
-//                     message: 'Email address is available'
-//                 });
-//             }
-//         });
-
-//     } catch (error) {
-//         console.error('Unexpected error in /check-email:', error);
-//         res.status(500).json({
-//             exists: false,
-//             message: 'Unexpected server error'
-//         });
-//     }
-// });
-
-
-
-// app.post('/fregister', (req, res) => {
-//     const sql = 'INSERT INTO users (`EmailAddress`, `userType`, `Password`, `Activation_Hash`, `isActive`) VALUES (?, ?, ?, ?, ?)';
-    
-//     const randomString = crypto.randomBytes(16).toString('hex');
-//     const activationHash = crypto.createHash('sha256').update(randomString).digest('hex').substring(0, 10);
-    
-//     const salt = 10;
-//     bcrypt.hash(req.body.Password.toString(), salt, (err, hash) => {
-//         if (err) {
-//             console.error('Error during hashing Password:', err);
-//             return res.status(500).json({ Error: "Internal Server Error" });
-//         }
-        
-//         const userType = "patient";
-//         const values = [
-//             req.body.EmailAddress,
-//             userType,
-//             hash,
-//             activationHash,
-//             0 // isActive set to false initially
-//         ];
-
-//         db.query(sql, values, (err, result) => {
-//             if (err) {
-//                 console.error('Error during database insertion:', err);
-//                 return res.status(500).json({ Error: "Internal Server Error" });
-//             }
-
-//             // Send activation email
-//             sendActivationEmail(req.body.EmailAddress, activationHash);
-
-//             console.log('Registration Successful:', req.body.EmailAddress);
-//             return res.json({ Status: 'Success' });
-//         });
-//     });
-// });
-// function sendActivationEmail(email, activationHash) {
-//     const transporter = nodemailer.createTransport({
-//         service: 'Gmail',
-//         auth: {
-//             user: 'shinikizua@gmail.com',
-//             pass: 'tnwv mqda tzqy fsqk' // Consider using environment variables for sensitive data
-//         }
-//     });
-
-//     const mailOptions = {
-//         from: 'shinikizua@gmail.com',
-//         to: email,
-//         subject: 'Account Activation',
-//         html: `
-//             <!DOCTYPE html>
-//             <html lang="en">
-//             <head>
-//                 <meta charset="UTF-8">
-//                 <title>Account Activation</title>
-//             </head>
-//             <body>
-//                 <h1>Account Activation</h1>
-//                 <p>Please activate your account by clicking the link below:</p>
-//                 <a href="http://localhost:8081/activate/${activationHash}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">
-//                     Activate
-//                 </a>
-//             </body>
-//             </html>
-//         `
-//     };
-
-//     transporter.sendMail(mailOptions, (err, info) => {
-//         if (err) {
-//             console.error('Error sending activation email:', err);
-//         } else {
-//             console.log('Activation email sent:', info.response);
-//         }
-//     });
-// } 
 
