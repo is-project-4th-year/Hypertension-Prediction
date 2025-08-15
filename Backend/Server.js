@@ -191,184 +191,176 @@ app.get("/activate/:activationHash", (req, res) => {
     });
   });
 
+// Login API with OTP
+app.post("/login", (req, res) => {
+  const { EmailAddress, Password } = req.body;
+  if (!EmailAddress || !Password) {
+    return res.status(400).json({ Status: "Error", Message: "Email and password are required" });
+  }
 
-app.post('/login', (req, res) => {
-    const { EmailAddress, Password } = req.body;
-
-    if (!EmailAddress || !Password) {
-        return res.json({ Status: 'Error', Message: 'Email and Password are required' });
+  const findSql = "SELECT * FROM users WHERE EmailAddress = ?";
+  db.query(findSql, [EmailAddress], (err, rows) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ Status: "Error", Message: "Database error" });
+    }
+    if (rows.length === 0) {
+      return res.status(404).json({ Status: "Error", Message: "User not found" });
     }
 
-    const sql = 'SELECT * FROM users WHERE EmailAddress = ?';
-    db.query(sql, [EmailAddress], async (err, results) => {
-        if (err) {
-            console.error('Query error:', err);
-            return res.json({ Status: 'Error', Message: 'Database error' });
+    const user = rows[0];
+    bcrypt.compare(Password, user.Password, async (err, match) => {
+      if (err) {
+        console.error("bcrypt error:", err);
+        return res.status(500).json({ Status: "Error", Message: "Internal error" });
+      }
+      if (!match) {
+        return res.status(401).json({ Status: "Error", Message: "Invalid password" });
+      }
+
+      // Generate & save OTP
+      const otp = generateOtp();
+      const expiry = nowMs() + FIVE_MIN;
+
+      const updateSql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE userId = ?";
+      db.query(updateSql, [otp, expiry, user.userId], async (err2) => {
+        if (err2) {
+          console.error("DB update error:", err2);
+          return res.status(500).json({ Status: "Error", Message: "Could not create OTP" });
         }
 
-        if (results.length === 0) {
-            return res.json({ Status: 'Error', Message: 'User not found' });
+        // Send OTP email
+        try {
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: EmailAddress,
+            subject: "Your Login OTP",
+            html: `
+              <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+                <h2>Your OTP Code</h2>
+                <p>Use the code below to complete your login:</p>
+                <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px;">${otp}</div>
+                <p>This code expires in 5 minutes.</p>
+              </div>
+            `,
+          });
+        } catch (mailErr) {
+          console.error("Email send error:", mailErr);
+          return res.status(500).json({ Status: "Error", Message: "Failed to send OTP email" });
         }
 
-        const user = results[0];
-
-        // Compare password
-        const match = await bcrypt.compare(Password, user.Password);
-        if (!match) {
-            return res.json({ Status: 'Error', Message: 'Invalid password' });
-        }
-
-        res.json({ Status: 'Success', Message: 'Login successful', User: user });
+        return res.json({
+          Status: "OTP_REQUIRED",
+          Message: "OTP sent to your email",
+        });
+      });
     });
+  });
 });
-  
+
+// STEP 2: verify OTP
+app.post("/verify-otp", (req, res) => {
+  const { EmailAddress, otp } = req.body;
+  if (!EmailAddress || !otp) {
+    return res.status(400).json({ Status: "Error", Message: "Email and OTP are required" });
+    }
+
+  const sql = "SELECT userId, userType, otp, otp_expiry FROM users WHERE EmailAddress = ?";
+  db.query(sql, [EmailAddress], (err, rows) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ Status: "Error", Message: "Database error" });
+    }
+    if (rows.length === 0) {
+      return res.status(404).json({ Status: "Error", Message: "User not found" });
+    }
+
+    const user = rows[0];
+    if (!user.otp || !user.otp_expiry) {
+      return res.status(400).json({ Status: "Error", Message: "No OTP pending for this user" });
+    }
+    if (nowMs() > Number(user.otp_expiry)) {
+      return res.status(400).json({ Status: "Error", Message: "OTP expired" });
+    }
+    if (String(user.otp) !== String(otp)) {
+      return res.status(400).json({ Status: "Error", Message: "Invalid OTP" });
+    }
+
+    // Clear OTP after success
+    const clearSql = "UPDATE users SET otp = NULL, otp_expiry = NULL WHERE userId = ?";
+    db.query(clearSql, [user.userId], (err2) => {
+      if (err2) {
+        console.error("DB clear OTP error:", err2);
+        return res.status(500).json({ Status: "Error", Message: "Could not finalize login" });
+      }
+      // You can also set a session/JWT here if needed.
+      return res.json({
+        Status: "Success",
+        Message: "Login successful",
+        userId: user.userId,
+        userType: user.userType || "patient",
+      });
+    });
+  });
+});
 
 
+// --- Nodemailer transporter (use Gmail App Password) ---
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // e.g. your@gmail.com
+    pass: process.env.EMAIL_PASS, // e.g. abcd efgh ijkl mnop (App Password)
+  },
+});
 
+// --- Helpers ---
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+const nowMs = () => Date.now();
+const FIVE_MIN = 5 * 60 * 1000;
 
-// const pool = mysql.createPool({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASS,
-//   database: process.env.DB_NAME,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0
-// });
+// resend OTP
+app.post("/resend-otp", (req, res) => {
+  const { EmailAddress } = req.body;
+  if (!EmailAddress) {
+    return res.status(400).json({ Status: "Error", Message: "Email required" });
+  }
 
-// pool.getConnection((err, connection) => {
-//   if (err) {
-//     console.error('Database connection error:', err);
-//   } else {
-//     console.log('Database connected');
-//     connection.release();
-//   }
-// });
+  const sql = "SELECT userId FROM users WHERE EmailAddress = ?";
+  db.query(sql, [EmailAddress], async (err, rows) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ Status: "Error", Message: "Database error" });
+    }
+    if (rows.length === 0) {
+      return res.status(404).json({ Status: "Error", Message: "User not found" });
+    }
+    const user = rows[0];
 
-// export default pool;
+    const otp = generateOtp();
+    const expiry = nowMs() + FIVE_MIN;
 
+    const updateSql = "UPDATE users SET otp = ?, otp_expiry = ? WHERE userId = ?";
+    db.query(updateSql, [otp, expiry, user.userId], async (err2) => {
+      if (err2) {
+        console.error("DB update error:", err2);
+        return res.status(500).json({ Status: "Error", Message: "Could not create OTP" });
+      }
 
-// const router = express.Router();
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: EmailAddress,
+          subject: "Your Login OTP (Resent)",
+          html: `<p>Your new OTP is <b>${otp}</b>. It expires in 5 minutes.</p>`,
+        });
+      } catch (mailErr) {
+        console.error("Email send error:", mailErr);
+        return res.status(500).json({ Status: "Error", Message: "Failed to send OTP email" });
+      }
 
-// router.post('/check-email', async (req, res) => {
-//     try {
-//         const { EmailAddress } = req.body;
-
-//         if (!EmailAddress) {
-//             return res.status(400).json({
-//                 exists: false,
-//                 message: 'Email address is required'
-//             });
-//         }
-
-//         const sql = 'SELECT * FROM users WHERE EmailAddress = ?';
-        
-//         db.query(sql, [EmailAddress], (err, result) => {
-//             if (err) {
-//                 console.error('Database query error:', err);
-//                 return res.status(500).json({
-//                     exists: false,
-//                     message: 'Database query failed'
-//                 });
-//             }
-
-//             if (result.length > 0) {
-//                 return res.status(200).json({
-//                     exists: true,
-//                     message: 'Email address already exists'
-//                 });
-//             } else {
-//                 return res.status(200).json({
-//                     exists: false,
-//                     message: 'Email address is available'
-//                 });
-//             }
-//         });
-
-//     } catch (error) {
-//         console.error('Unexpected error in /check-email:', error);
-//         res.status(500).json({
-//             exists: false,
-//             message: 'Unexpected server error'
-//         });
-//     }
-// });
-
-
-
-// app.post('/fregister', (req, res) => {
-//     const sql = 'INSERT INTO users (`EmailAddress`, `userType`, `Password`, `Activation_Hash`, `isActive`) VALUES (?, ?, ?, ?, ?)';
-    
-//     const randomString = crypto.randomBytes(16).toString('hex');
-//     const activationHash = crypto.createHash('sha256').update(randomString).digest('hex').substring(0, 10);
-    
-//     const salt = 10;
-//     bcrypt.hash(req.body.Password.toString(), salt, (err, hash) => {
-//         if (err) {
-//             console.error('Error during hashing Password:', err);
-//             return res.status(500).json({ Error: "Internal Server Error" });
-//         }
-        
-//         const userType = "patient";
-//         const values = [
-//             req.body.EmailAddress,
-//             userType,
-//             hash,
-//             activationHash,
-//             0 // isActive set to false initially
-//         ];
-
-//         db.query(sql, values, (err, result) => {
-//             if (err) {
-//                 console.error('Error during database insertion:', err);
-//                 return res.status(500).json({ Error: "Internal Server Error" });
-//             }
-
-//             // Send activation email
-//             sendActivationEmail(req.body.EmailAddress, activationHash);
-
-//             console.log('Registration Successful:', req.body.EmailAddress);
-//             return res.json({ Status: 'Success' });
-//         });
-//     });
-// });
-// function sendActivationEmail(email, activationHash) {
-//     const transporter = nodemailer.createTransport({
-//         service: 'Gmail',
-//         auth: {
-//             user: 'shinikizua@gmail.com',
-//             pass: 'tnwv mqda tzqy fsqk' // Consider using environment variables for sensitive data
-//         }
-//     });
-
-//     const mailOptions = {
-//         from: 'shinikizua@gmail.com',
-//         to: email,
-//         subject: 'Account Activation',
-//         html: `
-//             <!DOCTYPE html>
-//             <html lang="en">
-//             <head>
-//                 <meta charset="UTF-8">
-//                 <title>Account Activation</title>
-//             </head>
-//             <body>
-//                 <h1>Account Activation</h1>
-//                 <p>Please activate your account by clicking the link below:</p>
-//                 <a href="http://localhost:8081/activate/${activationHash}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">
-//                     Activate
-//                 </a>
-//             </body>
-//             </html>
-//         `
-//     };
-
-//     transporter.sendMail(mailOptions, (err, info) => {
-//         if (err) {
-//             console.error('Error sending activation email:', err);
-//         } else {
-//             console.log('Activation email sent:', info.response);
-//         }
-//     });
-// } 
+      return res.json({ Status: "OTP_REQUIRED", Message: "OTP resent" });
+    });
+  });
+});
 
