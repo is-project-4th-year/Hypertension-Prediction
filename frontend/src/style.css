@@ -233,3 +233,41 @@ button:hover {
         padding: 0 10px;
     }
 }
+
+/* OTP step styling */
+.otp-box {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.otp-box input {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    text-align: center;
+    border: none;
+    border-bottom: 2px solid #fff;
+    background: transparent;
+    color: #fff;
+}
+
+.otp-box input:focus {
+    outline: none;
+    border-bottom: 2px solid #00f6ff;
+}
+
+/* Transition animation for form switch */
+.form-step {
+    transition: all 0.3s ease-in-out;
+    opacity: 1;
+}
+
+.form-step.hidden {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
