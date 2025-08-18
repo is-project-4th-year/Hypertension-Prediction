@@ -364,3 +364,115 @@ app.post("/resend-otp", (req, res) => {
   });
 });
 
+// Forgot Password OTP Request
+let otpStore = {};
+app.post('/forgot-password-otp', (req, res) => {
+  const { email } = req.body;
+
+  db.query('SELECT * FROM users WHERE EmailAddress = ?', [email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins expiry
+
+    otpStore[email] = { otp, expires: expiresAt };
+    console.log("Stored OTP:", otpStore[email]);
+
+
+    // Save OTP in password_resets table
+    db.query(
+      'INSERT INTO password_resets (email, otp, expires_at) VALUES (?, ?, ?)',
+      [email, otp, expiresAt],
+      (insertErr) => {
+        if (insertErr) {
+          console.error(insertErr);
+          return res.status(500).json({ message: 'Failed to save OTP' });
+        }
+
+        // Send OTP email
+        transporter.sendMail({
+          from: `"Shinikizua" <${process.env.EMAIL_USER}>`,
+          to: email,
+          subject: 'Password Reset OTP',
+          text: `Your OTP is: ${otp} (valid for 5 minutes)`
+        }, (mailErr, info) => {
+          if (mailErr) {
+            console.error(mailErr);
+            return res.status(500).json({ message: 'Failed to send OTP email' });
+          }
+          res.json({ message: 'OTP sent to your email' });
+        });
+      }
+    );
+  });
+})
+
+
+app.post('/reset-password-otp', (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  console.log("Resetting password for:", email, otp, newPassword);
+
+  const record = otpStore[email];
+  console.log("OTP record:", record);
+  if (!record) {
+    return res.status(400).json({ message: 'No OTP found. Request again.' });
+  }
+
+  if (Date.now() > record.expires) {
+    delete otpStore[email];
+    return res.status(400).json({ message: 'OTP expired. Request again.' });
+  }
+
+  if (record.otp !== otp) {
+    return res.status(400).json({ message: 'Invalid OTP' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
+
+  db.query('UPDATE users SET Password = ? WHERE EmailAddress = ?', [hashedPassword, email], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    delete otpStore[email]; // remove OTP after use
+    res.json({ message: 'Password reset successful' });
+  });
+});
+
+// Verify OTP
+app.post('/verify-my-otp', (req, res) => {
+  const { email, otp } = req.body;
+  console.log("Verifying OTP for:", email);
+
+  db.query(
+    'SELECT * FROM password_resets WHERE email = ? AND otp = ? ORDER BY created_at DESC LIMIT 1',
+    [email, otp],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Database error' });
+      }
+
+      if (results.length === 0) {
+        console.log("Invalid OTP");
+        return res.status(400).json({ Status: "Error", Message: 'Invalid OTP' });
+      }
+
+      const record = results[0];
+      console.log("OTP record found:", record);
+      if (new Date(record.expires_at) < new Date()) {
+        return res.status(400).json({ message: 'OTP expired' });
+      }
+
+      res.json({ Status: "Success", message: 'OTP verified successfully' });
+    }
+  );
+});
