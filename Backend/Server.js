@@ -209,13 +209,27 @@ app.post("/login", (req, res) => {
     }
 
     const user = rows[0];
+
+      if (user.EmailAddress === 0) {
+            return res.json({
+              Status: "Register",
+              Message: "Kindly register your account to continue."
+            });
+          }
+          // 🔹 Check if account is active
+          if (user.isActive === 0) {
+            return res.json({
+              Status: "Activate_Account",
+              Message: "Please activate your account before logging in"
+            });
+          }
     bcrypt.compare(Password, user.Password, async (err, match) => {
       if (err) {
         console.error("bcrypt error:", err);
         return res.status(500).json({ Status: "Error", Message: "Internal error" });
       }
       if (!match) {
-        return res.status(401).json({ Status: "Error", Message: "Invalid password" });
+        return res.status(401).json({ Status: "Invalid_Password", Message: "Invalid password" });
       }
 
       // Generate & save OTP
