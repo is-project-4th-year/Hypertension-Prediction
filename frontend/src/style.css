@@ -146,7 +146,9 @@ h2 {
     outline: none;
     padding: 0 35px 0 5px;
 }
-
+.input-box input::placeholder {
+    color: transparent; /* Hide placeholder text */
+}
 .input-box .icon {
     position: absolute;
     top: 50%;
@@ -244,7 +246,7 @@ button:hover {
 }
 
 .otp-box input {
-    width: 40px;
+    width: 80px;
     height: 40px;
     font-size: 1.2em;
     text-align: center;
@@ -271,3 +273,98 @@ button:hover {
     overflow: hidden;
     pointer-events: none;
 }
+.forgot-password-link {
+  color: #00f6ff;
+  text-decoration: none;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover {
+  color: #ff00f6;
+  text-decoration: underline;
+}
+
+.form-message {
+  text-align: center;
+  font-size: 0.9em;
+  margin-top: 10px;
+}
+
+.form-message.success {
+  color: #00f6ff;
+}
+
+.form-message.error {
+  color: #ff4d4d;
+}
+
+.switch-link {
+  color: #00f6ff;
+  cursor: pointer;
+  margin-top: 15px;
+  text-decoration: underline;
+}
+.switch-link:hover {
+  color: #ff00f6;
+}
+
+/* Reuse login page box styles */
+.reset-box {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 40px;
+  background: #1c1c1c;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #000;
+  text-align: center;
+}
+
+/* User input boxes */
+.reset-box .user-box input {
+  width: 100%;
+  padding: 10px 0;
+  margin-bottom: 30px;
+  border: none;
+  border-bottom: 1px solid #fff;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+}
+
+.reset-box .user-box label {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  color: #fff;
+  pointer-events: none;
+  transition: 0.5s;
+}
+
+/* Login button style reused for reset button */
+.login-button {
+  background-color: #4caf50; /* same green as login */
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.3s;
+}
+
+.login-button:hover {
+  background-color: #45a049; /* slightly darker green on hover */
+}
+
+/* Message text below form */
+.reset-message {
+  margin-top: 15px;
+  color: #ffdd57;
+  font-weight: bold;
+}
+
+
