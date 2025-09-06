@@ -43,11 +43,15 @@ export default function Login() {
         setResendIn(30);
       } else if (res.data.Status === "Success") {
         navigate('/');
+      } else if (res.data.Status === "Invalid_Password") {
+        setMessage("Invalid password");
+      } else if (res.data.Status === "Activate_Account") {
+        setMessage("Please activate your account before logging in");
       } else {
         setMessage(res.data.Message || "Login failed");
       }
     } catch {
-      setMessage("Network error or server is down");
+      setMessage("Error logging in. Please check username or password");
     } finally {
       setLoading(false);
     }
@@ -126,7 +130,10 @@ export default function Login() {
     }
   };
 
-  
+  const formatOtp = (val) => {
+  if (val.length <= 3) return val;
+  return val.slice(0, 3) + "-" + val.slice(3, 6);
+};
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -195,10 +202,17 @@ export default function Login() {
         <form onSubmit={handleVerifyOtp} className={`form-step ${step === "OTP" ? "" : "hidden"}`}>
           <h2>Enter OTP</h2>
           <div className="otp-box">
-            <input ref={otpInputRef} type="text" maxLength={6}
-              autoComplete="one-time-code"
-              placeholder="6-digit code" value={otp}
-              onChange={e => setOtp(e.target.value.replace(/\D/g, ''))} required />
+            <input
+            type="text"
+            maxLength={7}
+            inputMode="numeric"
+            placeholder="XXX-XXX"
+            value={formatOtp(otp)}
+            onChange={(e) => {
+              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); // store digits only
+            }}
+            required
+          />
           </div>
           <button type="submit" disabled={loading}>{loading ? "Verifying..." : "Verify OTP"}</button>
           <button type="button" onClick={handleResend} disabled={resendIn > 0 || loading}>
@@ -236,8 +250,17 @@ export default function Login() {
           </div>
           <div className="input-box">
             <span className="icon"><IoLockClosed /></span>
-            <input ref={otpInputRef} type="text" required value={otp}
-              onChange={e => setOtp(e.target.value)} autoComplete="one-time-code" />
+            <input
+              type="text"
+              maxLength={7}
+              inputMode="numeric"
+              placeholder="XXX-XXX"
+              value={formatOtp(otp)}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); // store digits only
+              }}
+              required
+/>
             <label>Enter OTP</label>
           </div>
           <button type="submit" disabled={loading}>{loading ? "Verifying..." : "Verify OTP"}</button>
