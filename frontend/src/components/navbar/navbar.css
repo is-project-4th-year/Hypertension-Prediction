@@ -1,0 +1,105 @@
+.navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    position: fixed;   /* keep navbar fixed on scroll */
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: var(--bg-color);
+    z-index: 1000;
+    padding: 10px0px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Logo */
+.logo > img {
+    background-color: var(--bg-color);
+    position: absolute;
+    width: 90px;
+    height: fit-content;
+    cursor: pointer;
+    border-radius: 20px;
+    top: 0px;
+    bottom: 20px;
+    right: 0px;
+    
+    border-bottom: var(--border-color);
+}
+
+/* Nav items container */
+.nav-items {
+    position: relative; /* needed for underline positioning */
+    display: flex;
+    gap: 30px;
+}
+
+/* Links instead of h3 */
+.nav-items a {
+    font-weight: 400;
+    font-size: 16px;
+    text-decoration: none;
+    color: var(--text-color);
+    padding-bottom: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+/* Hover effect */
+.nav-items a:hover {
+    color: #174EB2;
+}
+
+/* Active link */
+.nav-items a.active {
+    color: #174EB2;
+}
+
+/* Animated underline */
+.nav-items .underline {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    background: #174EB2;
+    transition: all 0.3s ease;
+}
+
+.navbarBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #174EB2;
+    transition: color 0.3s ease;
+}
+
+/* Side nav */
+.side-nav-items {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.side-nav-items > h3 {
+    font-size: 16px;
+    font-weight: 400;
+    color: #174EB2;
+    cursor: pointer;
+}
+
+.side-nav-items > img {
+    width: 30px;
+    cursor: pointer;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+.navbarBtn{
+        background-color: #174EB2;
+        color: var(--text-color);
+        width: 80px;
+        height: 40px;
+        border-radius: 5px;
+}
